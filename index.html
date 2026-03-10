@@ -3,38 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <meta name="google-site-verification" content="s0PJEb0U7wFiQYvKXHnGlYibFPDoQ9XoBQ9eijB1jHg" />
-    
-    <title>Tahsin Smart | Portal Akademik Terpadu Asatidz & Santri</title>
-    <meta name="description" content="Tahsin Smart adalah portal akademik terpadu untuk mengelola presensi, bank soal, ujian online, dan rekapitulasi nilai santri secara real-time.">
-    <meta name="keywords" content="tahsin, portal akademik, aplikasi tahsin, manajemen kelas, ujian online, nilai santri, presensi online, asatidz">
-    <meta name="author" content="Tahsin Smart">
-    <meta name="robots" content="index, follow">
-    
-    <link rel="canonical" href="https://tahsin-smart.web.app/">
-
-    <meta property="og:title" content="Tahsin Smart | Portal Akademik Terpadu">
-    <meta property="og:description" content="Portal akademik pintar untuk manajemen kelas tahsin, presensi, dan ujian online.">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://tahsin-smart.web.app/">
-    <meta property="og:image" content="https://tahsin-smart.web.app/assets/og-image.jpg"> <meta property="og:locale" content="id_ID">
-
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Tahsin Smart | Portal Akademik Terpadu">
-    <meta name="twitter:description" content="Portal akademik pintar untuk manajemen kelas tahsin, presensi, dan ujian online.">
-    <meta name="twitter:image" content="https://tahsin-smart.web.app/assets/twitter-image.jpg"> <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "Tahsin Smart",
-      "url": "https://tahsin-smart.web.app/",
-      "description": "Portal akademik terpadu untuk asatidz dan santri mengelola kelas, presensi, ujian, dan rekap nilai.",
-      "applicationCategory": "EducationalApplication",
-      "operatingSystem": "All"
-    }
-    </script>
-
+    <title>Tahsin Academic Smart</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -1500,25 +1469,22 @@ onAuthStateChanged(auth, async (user) => {
             });
         }
 
-// E. Tarik Nilai & Hitung Peringkat Otomatis (SMART RANKING)
+        // E. Tarik Nilai & Hitung Peringkat Otomatis
         onSnapshot(query(collection(db, "nilai"), qBase), (snap) => {
             let htmlGuru = ""; let htmlMurid = "";
-            let rekapanSiswa = {}; // Wadah untuk akumulasi
+            let rekapanSiswa = {}; // Untuk perhitungan ranking
 
-            // TAHAP 1: CEK DAN AKUMULASI SEMUA NILAI TERLEBIH DAHULU
             let docs = snap.docs.sort((a,b) => b.data().waktu - a.data().waktu);
             docs.forEach(doc => {
                 const d = doc.data();
 
-                // Kalkulasi Ranking Pintar: Hitung Total, Count, dan Nilai Tertinggi
+                // Logika Kalkulasi Ranking 
                 if(!rekapanSiswa[d.nama]) {
-                    rekapanSiswa[d.nama] = { total: 0, count: 0, tertinggi: 0 };
+                    rekapanSiswa[d.nama] = { total: 0, count: 0 };
                 }
                 rekapanSiswa[d.nama].total += d.skor;
                 rekapanSiswa[d.nama].count += 1;
-                if(d.skor > rekapanSiswa[d.nama].tertinggi) rekapanSiswa[d.nama].tertinggi = d.skor;
 
-                // Render Card Nilai untuk Daftar Rekapitulasi Pribadi
                 let kategoriData = d.kategori || "Tugas"; 
                 let gradeColor = d.skor >= 80 ? 'text-emerald-500' : (d.skor >= 60 ? 'text-amber-500' : 'text-red-500');
                 
@@ -1547,77 +1513,55 @@ onAuthStateChanged(auth, async (user) => {
                 else if(currentUser.role === 'murid' && d.nama.toLowerCase() === currentUser.nama.toLowerCase()) htmlMurid += cardHtml;
             });
 
-            // TAHAP 2: MASUKKAN HASIL AKUMULASI KE DALAM ARRAY BARU
-            let rankingData = [];
-            for(let nama in rekapanSiswa) {
-                let avg = Math.round(rekapanSiswa[nama].total / rekapanSiswa[nama].count);
-                rankingData.push({ 
-                    nama: nama, 
-                    avg: avg, 
-                    count: rekapanSiswa[nama].count,
-                    tertinggi: rekapanSiswa[nama].tertinggi 
-                });
-            }
-            
-            // TAHAP 3: URUTKAN BERDASARKAN RATA-RATA TERTINGGI (SORTING)
-            rankingData.sort((a, b) => {
-                if (b.avg !== a.avg) return b.avg - a.avg;
-                return b.tertinggi - a.tertinggi; 
-            });
-
-            // TAHAP 4: TAMPILKAN HASIL AKHIR RANKING KE UI HTML
-            let htmlRanking = "";
-            let rankLimit = Math.min(rankingData.length, 10); // Tampilkan Top 10
-            let actualRank = 1;
-
-            for(let i = 0; i < rankLimit; i++) {
-                if (i > 0 && rankingData[i].avg < rankingData[i-1].avg) {
-                    actualRank = i + 1;
-                }
-
-                let rankIcon = '';
-                if(actualRank === 1) rankIcon = '<i class="fas fa-medal text-yellow-400 text-3xl drop-shadow-md"></i>';
-                else if(actualRank === 2) rankIcon = '<i class="fas fa-medal text-gray-300 text-3xl drop-shadow-md"></i>';
-                else if(actualRank === 3) rankIcon = '<i class="fas fa-medal text-amber-700 text-3xl drop-shadow-md"></i>';
-                else rankIcon = `<span class="font-black text-slate-400 text-xl w-8 text-center">${actualRank}</span>`;
-
-                let bgStyle = actualRank === 1 
-                    ? 'bg-gradient-to-r from-amber-50 to-yellow-100 border-yellow-300 shadow-md transform scale-[1.02]' 
-                    : 'bg-white border-gray-100';
-                
-                let textColor = actualRank === 1 ? 'text-amber-600' : 'text-slate-700';
-
-                htmlRanking += `
-                    <div class="flex items-center justify-between p-3 md:p-4 mb-3 rounded-xl border ${bgStyle} hover:shadow transition-all relative overflow-hidden">
-                        ${actualRank === 1 ? '<div class="absolute -right-4 -top-2 opacity-20 text-7xl rotate-12"><i class="fas fa-crown"></i></div>' : ''}
-                        <div class="flex items-center gap-3 md:gap-4 relative z-10">
-                            <div class="w-10 flex items-center justify-center shrink-0">${rankIcon}</div>
-                            <div>
-                                <p class="font-extrabold text-slate-800 text-sm md:text-base">${rankingData[i].nama}</p>
-                                <p class="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                    Rata-rata: ${rankingData[i].avg} <span class="mx-1">•</span> ${rankingData[i].count} Tugas
-                                </p>
-                            </div>
-                        </div>
-                        <div class="text-right relative z-10">
-                            <div class="text-lg md:text-xl font-black ${textColor} drop-shadow-sm">${rankingData[i].avg}</div>
-                        </div>
-                    </div>`;
-            }
-
-            if(rankingData.length === 0) {
-                htmlRanking = `<div class="text-center text-gray-400 py-6 md:py-8 text-xs md:text-sm italic border-2 border-dashed border-gray-200 rounded-xl">Data nilai belum masuk. Kerjakan tugas & ujian untuk meraih peringkat!</div>`;
-            }
-
-            // Render State Kosong untuk Daftar Nilai
+            // Render Nilai
             let emptyState = `
                 <div class='col-span-full flex flex-col items-center justify-center py-10 md:py-12 bg-white rounded-xl md:rounded-2xl border-2 border-dashed border-slate-200 text-center'>
                     <i class="fas fa-star text-3xl md:text-4xl text-slate-300 mb-2 md:mb-3"></i>
                     <p class="text-slate-500 font-bold text-sm md:text-base">Belum ada nilai yang direkap</p>
                 </div>`;
-            
-            // Eksekusi Injeksi ke HTML Sekaligus (Mencegah Glitch UI)
             document.getElementById('list-nilai').innerHTML = currentUser.role === 'guru' ? (htmlGuru || emptyState) : (htmlMurid || emptyState);
+
+            // Render Ranking di Dashboard Beranda
+            let rankingData = [];
+            for(let nama in rekapanSiswa) {
+                let avg = Math.round(rekapanSiswa[nama].total / rekapanSiswa[nama].count);
+                rankingData.push({ nama: nama, avg: avg });
+            }
+            
+            // Urutkan dari nilai tertinggi ke terendah
+            rankingData.sort((a, b) => b.avg - a.avg);
+
+            let htmlRanking = "";
+            let icons = [
+                '<i class="fas fa-medal text-yellow-400 text-3xl drop-shadow-md"></i>', 
+                '<i class="fas fa-medal text-gray-300 text-3xl drop-shadow-md"></i>', 
+                '<i class="fas fa-medal text-amber-700 text-3xl drop-shadow-md"></i>'
+            ];
+
+            let rankLimit = Math.min(rankingData.length, 5); // Tampilkan Top 5
+            for(let i = 0; i < rankLimit; i++) {
+                let rankIcon = i < 3 ? icons[i] : `<span class="font-black text-slate-400 text-xl w-8 text-center">${i+1}</span>`;
+                let bgStyle = i === 0 ? 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200' : 'bg-white border-gray-100';
+                
+                htmlRanking += `
+                    <div class="flex items-center justify-between p-3 md:p-4 mb-3 rounded-xl border ${bgStyle} shadow-sm hover:shadow transition-all">
+                        <div class="flex items-center gap-3 md:gap-4">
+                            <div class="w-10 flex items-center justify-center shrink-0">${rankIcon}</div>
+                            <div>
+                                <p class="font-extrabold text-slate-800 text-sm md:text-base">${rankingData[i].nama}</p>
+                                <p class="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider">Rata-rata: ${rankingData[i].avg}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-lg md:text-xl font-black text-amber-600 drop-shadow-sm">${rankingData[i].avg}</div>
+                        </div>
+                    </div>`;
+            }
+
+            if(rankingData.length === 0) {
+                htmlRanking = `<div class="text-center text-gray-400 py-6 md:py-8 text-xs md:text-sm italic border-2 border-dashed border-gray-200 rounded-xl">Nilai belum ada. Kerjakan tugas & ujian untuk meraih peringkat!</div>`;
+            }
+
             document.getElementById('list-ranking').innerHTML = htmlRanking;
         });
     }
