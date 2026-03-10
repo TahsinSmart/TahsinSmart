@@ -485,7 +485,7 @@
                                     </div>
 
                                     <div class="mt-8 pt-6 border-t border-slate-100 text-center">
-                                        <p class="text-xs text-slate-400 font-medium">© Sistem Akademik Terpadu Tahsin Smart 2026 - All Rights Reserved.<br>Developed by: SukaCoding.</p>
+                                        <p class="text-xs text-slate-400 font-medium">Sistem Akademik Terpadu Tahsin Smart © 2026<br>Dikembangkan dengan <i class="fas fa-heart text-red-400 mx-1"></i> menggunakan Firebase.</p>
                                     </div>
 
                                 </div>
@@ -1469,22 +1469,25 @@ onAuthStateChanged(auth, async (user) => {
             });
         }
 
-        // E. Tarik Nilai & Hitung Peringkat Otomatis
+// E. Tarik Nilai & Hitung Peringkat Otomatis (SMART RANKING)
         onSnapshot(query(collection(db, "nilai"), qBase), (snap) => {
             let htmlGuru = ""; let htmlMurid = "";
-            let rekapanSiswa = {}; // Untuk perhitungan ranking
+            let rekapanSiswa = {}; // Wadah untuk akumulasi
 
+            // TAHAP 1: CEK DAN AKUMULASI SEMUA NILAI TERLEBIH DAHULU
             let docs = snap.docs.sort((a,b) => b.data().waktu - a.data().waktu);
             docs.forEach(doc => {
                 const d = doc.data();
 
-                // Logika Kalkulasi Ranking 
+                // Kalkulasi Ranking Pintar: Hitung Total, Count, dan Nilai Tertinggi
                 if(!rekapanSiswa[d.nama]) {
-                    rekapanSiswa[d.nama] = { total: 0, count: 0 };
+                    rekapanSiswa[d.nama] = { total: 0, count: 0, tertinggi: 0 };
                 }
                 rekapanSiswa[d.nama].total += d.skor;
                 rekapanSiswa[d.nama].count += 1;
+                if(d.skor > rekapanSiswa[d.nama].tertinggi) rekapanSiswa[d.nama].tertinggi = d.skor;
 
+                // Render Card Nilai untuk Daftar Rekapitulasi Pribadi
                 let kategoriData = d.kategori || "Tugas"; 
                 let gradeColor = d.skor >= 80 ? 'text-emerald-500' : (d.skor >= 60 ? 'text-amber-500' : 'text-red-500');
                 
@@ -1513,60 +1516,80 @@ onAuthStateChanged(auth, async (user) => {
                 else if(currentUser.role === 'murid' && d.nama.toLowerCase() === currentUser.nama.toLowerCase()) htmlMurid += cardHtml;
             });
 
-            // Render Nilai
-            let emptyState = `
-                <div class='col-span-full flex flex-col items-center justify-center py-10 md:py-12 bg-white rounded-xl md:rounded-2xl border-2 border-dashed border-slate-200 text-center'>
-                    <i class="fas fa-star text-3xl md:text-4xl text-slate-300 mb-2 md:mb-3"></i>
-                    <p class="text-slate-500 font-bold text-sm md:text-base">Belum ada nilai yang direkap</p>
-                </div>`;
-            document.getElementById('list-nilai').innerHTML = currentUser.role === 'guru' ? (htmlGuru || emptyState) : (htmlMurid || emptyState);
-
-            // Render Ranking di Dashboard Beranda
+            // TAHAP 2: MASUKKAN HASIL AKUMULASI KE DALAM ARRAY BARU
             let rankingData = [];
             for(let nama in rekapanSiswa) {
                 let avg = Math.round(rekapanSiswa[nama].total / rekapanSiswa[nama].count);
-                rankingData.push({ nama: nama, avg: avg });
+                rankingData.push({ 
+                    nama: nama, 
+                    avg: avg, 
+                    count: rekapanSiswa[nama].count,
+                    tertinggi: rekapanSiswa[nama].tertinggi 
+                });
             }
             
-            // Urutkan dari nilai tertinggi ke terendah
-            rankingData.sort((a, b) => b.avg - a.avg);
+            // TAHAP 3: URUTKAN BERDASARKAN RATA-RATA TERTINGGI (SORTING)
+            rankingData.sort((a, b) => {
+                if (b.avg !== a.avg) return b.avg - a.avg;
+                return b.tertinggi - a.tertinggi; 
+            });
 
+            // TAHAP 4: TAMPILKAN HASIL AKHIR RANKING KE UI HTML
             let htmlRanking = "";
-            let icons = [
-                '<i class="fas fa-medal text-yellow-400 text-3xl drop-shadow-md"></i>', 
-                '<i class="fas fa-medal text-gray-300 text-3xl drop-shadow-md"></i>', 
-                '<i class="fas fa-medal text-amber-700 text-3xl drop-shadow-md"></i>'
-            ];
+            let rankLimit = Math.min(rankingData.length, 10); // Tampilkan Top 10
+            let actualRank = 1;
 
-            let rankLimit = Math.min(rankingData.length, 5); // Tampilkan Top 5
             for(let i = 0; i < rankLimit; i++) {
-                let rankIcon = i < 3 ? icons[i] : `<span class="font-black text-slate-400 text-xl w-8 text-center">${i+1}</span>`;
-                let bgStyle = i === 0 ? 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200' : 'bg-white border-gray-100';
+                if (i > 0 && rankingData[i].avg < rankingData[i-1].avg) {
+                    actualRank = i + 1;
+                }
+
+                let rankIcon = '';
+                if(actualRank === 1) rankIcon = '<i class="fas fa-medal text-yellow-400 text-3xl drop-shadow-md"></i>';
+                else if(actualRank === 2) rankIcon = '<i class="fas fa-medal text-gray-300 text-3xl drop-shadow-md"></i>';
+                else if(actualRank === 3) rankIcon = '<i class="fas fa-medal text-amber-700 text-3xl drop-shadow-md"></i>';
+                else rankIcon = `<span class="font-black text-slate-400 text-xl w-8 text-center">${actualRank}</span>`;
+
+                let bgStyle = actualRank === 1 
+                    ? 'bg-gradient-to-r from-amber-50 to-yellow-100 border-yellow-300 shadow-md transform scale-[1.02]' 
+                    : 'bg-white border-gray-100';
                 
+                let textColor = actualRank === 1 ? 'text-amber-600' : 'text-slate-700';
+
                 htmlRanking += `
-                    <div class="flex items-center justify-between p-3 md:p-4 mb-3 rounded-xl border ${bgStyle} shadow-sm hover:shadow transition-all">
-                        <div class="flex items-center gap-3 md:gap-4">
+                    <div class="flex items-center justify-between p-3 md:p-4 mb-3 rounded-xl border ${bgStyle} hover:shadow transition-all relative overflow-hidden">
+                        ${actualRank === 1 ? '<div class="absolute -right-4 -top-2 opacity-20 text-7xl rotate-12"><i class="fas fa-crown"></i></div>' : ''}
+                        <div class="flex items-center gap-3 md:gap-4 relative z-10">
                             <div class="w-10 flex items-center justify-center shrink-0">${rankIcon}</div>
                             <div>
                                 <p class="font-extrabold text-slate-800 text-sm md:text-base">${rankingData[i].nama}</p>
-                                <p class="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider">Rata-rata: ${rankingData[i].avg}</p>
+                                <p class="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                    Rata-rata: ${rankingData[i].avg} <span class="mx-1">•</span> ${rankingData[i].count} Tugas
+                                </p>
                             </div>
                         </div>
-                        <div class="text-right">
-                            <div class="text-lg md:text-xl font-black text-amber-600 drop-shadow-sm">${rankingData[i].avg}</div>
+                        <div class="text-right relative z-10">
+                            <div class="text-lg md:text-xl font-black ${textColor} drop-shadow-sm">${rankingData[i].avg}</div>
                         </div>
                     </div>`;
             }
 
             if(rankingData.length === 0) {
-                htmlRanking = `<div class="text-center text-gray-400 py-6 md:py-8 text-xs md:text-sm italic border-2 border-dashed border-gray-200 rounded-xl">Nilai belum ada. Kerjakan tugas & ujian untuk meraih peringkat!</div>`;
+                htmlRanking = `<div class="text-center text-gray-400 py-6 md:py-8 text-xs md:text-sm italic border-2 border-dashed border-gray-200 rounded-xl">Data nilai belum masuk. Kerjakan tugas & ujian untuk meraih peringkat!</div>`;
             }
 
+            // Render State Kosong untuk Daftar Nilai
+            let emptyState = `
+                <div class='col-span-full flex flex-col items-center justify-center py-10 md:py-12 bg-white rounded-xl md:rounded-2xl border-2 border-dashed border-slate-200 text-center'>
+                    <i class="fas fa-star text-3xl md:text-4xl text-slate-300 mb-2 md:mb-3"></i>
+                    <p class="text-slate-500 font-bold text-sm md:text-base">Belum ada nilai yang direkap</p>
+                </div>`;
+            
+            // Eksekusi Injeksi ke HTML Sekaligus (Mencegah Glitch UI)
+            document.getElementById('list-nilai').innerHTML = currentUser.role === 'guru' ? (htmlGuru || emptyState) : (htmlMurid || emptyState);
             document.getElementById('list-ranking').innerHTML = htmlRanking;
         });
     }
 </script>
 </body>
-    </html>
-
-
+</html>
