@@ -50,5 +50,5 @@ Karena aplikasi ini berjalan sepenuhnya di sisi klien (*client-side*), kamu bisa
 
 1. **Clone Repositori ini:**
    ```bash
-   git clone [https://github.com/username-kamu/tahsin-smart.git](https://github.com/username-kamu/tahsin-smart.git)
+   git clone [https://github.com/username-kamu/tahsin-smart.git]([https://github.com/username-kamu/tahsin-smart.git](https://github.com/TahsinSmart/TahsinSmart)
    cd tahsin-smart
