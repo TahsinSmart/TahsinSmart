@@ -44,6 +44,11 @@ Aplikasi ini dibangun menggunakan arsitektur *Serverless* (Frontend-only):
 
 ---
 
+
+**Tips Tambahan untuk GitHub:**
+1. Ganti URL `https://github.com/username-kamu/tahsin-smart.git` pada langkah instalasi dengan URL repositori kamu yang sebenarnya.
+2. Jika nanti kamu sudah mengambil *screenshot* (tangkapan layar) dari aplikasi saat berjalan, kamu bisa menambahkan bagian `## 📸 Cuplikan Layar (Screenshots)` ke dalam README tersebut agar terlihat lebih profesional!
+
 ## 🚀 Cara Menjalankan Secara Lokal (Setup)
 
 Karena aplikasi ini berjalan sepenuhnya di sisi klien (*client-side*), kamu bisa langsung menjalankannya tanpa perlu menginstal Node.js atau paket NPM.
@@ -52,9 +57,3 @@ Karena aplikasi ini berjalan sepenuhnya di sisi klien (*client-side*), kamu bisa
    ```bash
    git clone [https://github.com/username-kamu/tahsin-smart.git]([https://github.com/username-kamu/tahsin-smart.git](https://github.com/TahsinSmart/TahsinSmart)
    cd tahsin-smart
-
-
-
-   **Tips Tambahan untuk GitHub:**
-1. Ganti URL `https://github.com/username-kamu/tahsin-smart.git` pada langkah instalasi dengan URL repositori kamu yang sebenarnya.
-2. Jika nanti kamu sudah mengambil *screenshot* (tangkapan layar) dari aplikasi saat berjalan, kamu bisa menambahkan bagian `## 📸 Cuplikan Layar (Screenshots)` ke dalam README tersebut agar terlihat lebih profesional!
