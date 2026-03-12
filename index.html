@@ -315,11 +315,14 @@
                             <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-4 md:mb-6">
                                 <div>
                                     <h3 class="font-bold text-lg md:text-xl text-slate-800"><i class="fas fa-clipboard-user text-blue-500 mr-2"></i> Form Presensi Santri</h3>
-                                    <p class="text-xs md:text-sm text-gray-500 mt-1">Isi daftar hadir santri untuk tanggal hari ini.</p>
+                                    <p class="text-xs md:text-sm text-gray-500 mt-1">Pilih tanggal (kosongkan untuk hari ini) & isi daftar hadir.</p>
                                 </div>
-                                <button onclick="simpanAbsenMassal()" class="w-full md:w-auto bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
-                                    <i class="fas fa-save"></i> Simpan Presensi
-                                </button>
+                                <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                                    <input type="date" id="tanggal-absen-manual" class="w-full sm:w-auto border-2 border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-blue-500 bg-gray-50 focus:bg-white transition">
+                                    <button onclick="simpanAbsenMassal()" class="w-full sm:w-auto bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                                        <i class="fas fa-save"></i> Simpan Presensi
+                                    </button>
+                                </div>
                             </div>
                             <div class="rounded-2xl border border-gray-200 overflow-hidden bg-white">
                                 <div class="hidden md:grid grid-cols-12 gap-2 p-4 border-b bg-gray-50 text-sm font-extrabold text-slate-600">
@@ -417,6 +420,36 @@
                     </div>
                 </div>
 
+                <div id="menu-kuis" class="menu-content max-w-5xl mx-auto">
+                    <div id="panel-guru-kuis" class="hidden bg-white p-4 md:p-8 rounded-3xl shadow-sm border border-gray-100 mb-6 border-t-4 border-t-rose-500">
+                        <h3 class="font-extrabold text-lg md:text-xl text-slate-800 mb-4"><i class="fas fa-stopwatch text-rose-500 mr-2"></i> Buat Kuis Berwaktu</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 mb-2 block">Judul Kuis</label>
+                                <input type="text" id="kuis-judul" placeholder="Cth: Tes Kecepatan Tajwid" class="w-full border-2 border-gray-200 p-3 rounded-xl outline-none focus:border-rose-400 font-semibold">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 mb-2 block">Durasi (Menit)</label>
+                                <input type="number" id="kuis-waktu" placeholder="Cth: 15" class="w-full border-2 border-gray-200 p-3 rounded-xl outline-none focus:border-rose-400 font-bold text-rose-600">
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="text-xs font-bold text-slate-500 mb-2 block">Pertanyaan / Instruksi Kuis</label>
+                            <textarea id="kuis-soal" rows="3" class="w-full border-2 border-gray-200 p-3 rounded-xl outline-none focus:border-rose-400" placeholder="Ketik soal kuis di sini..."></textarea>
+                        </div>
+                        <div class="flex justify-end">
+                            <button onclick="simpanKuis()" class="bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white px-6 py-3 rounded-xl font-bold transition shadow-lg"><i class="fas fa-paper-plane mr-2"></i> Terbitkan Kuis Timer</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-4 md:p-8">
+                        <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
+                            <div class="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center"><i class="fas fa-bolt"></i></div>
+                            <h3 class="font-extrabold text-lg md:text-xl text-slate-800">Daftar Kuis Aktif</h3>
+                        </div>
+                        <div id="list-kuis-container" class="space-y-6"></div>
+                    </div>
+                </div>
                 <div id="menu-nilai" class="menu-content max-w-5xl mx-auto">
                     <div id="panel-guru-nilai" class="hidden bg-white p-4 md:p-8 rounded-3xl shadow-sm border border-gray-100 mb-6 md:mb-8 border-t-4 border-t-emerald-500">
                         <h3 class="font-extrabold text-lg md:text-xl text-slate-800 mb-4 md:mb-6"><i class="fas fa-medal text-emerald-500 mr-2"></i> Form Penilaian Manual</h3>
@@ -533,7 +566,7 @@
 <script type="module">
     // --- 1. SETUP FIREBASE ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, where, doc, setDoc, getDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, where, doc, setDoc, getDoc, orderBy, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
     const firebaseConfig = {
@@ -559,6 +592,7 @@
     // Variabel global untuk menyimpan data sementara
     let semuaPaketSoal = [];
     let riwayatJawabanMurid = {};
+    let intervalKuis = {}; // Tambahan Variabel untuk menyimpan state timer kuis
 
     // Export variables to window
     window.login = login; window.logout = logout; window.buatKelas = buatKelas; window.gabungKelas = gabungKelas; window.importKelasGuru = importKelasGuru;
@@ -567,9 +601,11 @@
     window.lihatJawaban = lihatJawaban; window.simpanFeedback = simpanFeedback;
     window.toggleFormPengumuman = toggleFormPengumuman; window.simpanPengumuman = simpanPengumuman;
     window.unduhSoalWord = unduhSoalWord; window.simpanNamaCustom = simpanNamaCustom; 
-    window.toggleSidebar = toggleSidebar; 
-    
+    window.toggleSidebar = toggleSidebar; window.hapusMurid = hapusMurid;
     window.tambahPilgan = tambahPilgan; window.tambahEsai = tambahEsai; 
+    
+    // Export Fungsi Fitur Kuis
+    window.simpanKuis = simpanKuis; window.mulaiKuis = mulaiKuis; window.submitKuis = submitKuis;
 
     // Set Tanggal Header
     const optionsTgl = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -738,12 +774,13 @@ onAuthStateChanged(auth, async (user) => {
 
         const menu = document.getElementById('sidebar-menu');
         
-        // Render Navbar
+        // Render Navbar (DITAMBAHKAN MENU KUIS)
         if(currentUser.role === 'guru') {
             menu.innerHTML = `
                 <a href="#" onclick="bukaMenu('beranda', 'Beranda', this)" class="sidebar-item active block px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-700 hover:text-white mb-1"><i class="fas fa-home w-5 mr-1 text-center"></i> Beranda</a>
                 <a href="#" onclick="bukaMenu('absen', 'Data Kehadiran', this)" class="sidebar-item block px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-700 hover:text-white mb-1"><i class="fas fa-clipboard-check w-5 mr-1 text-center"></i> Absen Kelas</a>
                 <a href="#" onclick="bukaMenu('soal', 'Bank Soal & Ujian', this)" class="sidebar-item block px-4 py-3 rounded-xl text-slate-300 mt-3 border-t border-slate-700/50 pt-4 hover:bg-slate-700 hover:text-white mb-1"><i class="fas fa-book-open-reader w-5 mr-1 text-center"></i> Soal & Ujian</a>
+                <a href="#" onclick="bukaMenu('kuis', 'Kuis Berwaktu', this)" class="sidebar-item block px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-700 hover:text-white mb-1"><i class="fas fa-stopwatch w-5 mr-1 text-center"></i> Kuis Berwaktu</a>
                 <a href="#" onclick="bukaMenu('nilai', 'Input Nilai', this)" class="sidebar-item block px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-700 hover:text-white mb-1"><i class="fas fa-star w-5 mr-1 text-center"></i> Input Nilai</a>
                 <a href="#" onclick="bukaMenu('pengaturan', 'Pengaturan & Privasi', this)" class="sidebar-item block px-4 py-3 rounded-xl text-slate-300 mt-3 border-t border-slate-700/50 pt-4 hover:bg-slate-700 hover:text-white"><i class="fas fa-gear w-5 mr-1 text-center"></i> Pengaturan</a>`;
             
@@ -759,6 +796,7 @@ onAuthStateChanged(auth, async (user) => {
                 <a href="#" onclick="bukaMenu('beranda', 'Beranda', this)" class="sidebar-item active block px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-700 hover:text-white mb-1"><i class="fas fa-home w-5 mr-1 text-center"></i> Beranda</a>
                 <a href="#" onclick="bukaMenu('absen', 'Riwayat Hadir', this)" class="sidebar-item block px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-700 hover:text-white mb-1"><i class="fas fa-user-check w-5 mr-1 text-center"></i> Riwayat Absen</a>
                 <a href="#" onclick="bukaMenu('soal', 'Tugas & Ujian', this)" class="sidebar-item block px-4 py-3 rounded-xl text-slate-300 mt-3 border-t border-slate-700/50 pt-4 hover:bg-slate-700 hover:text-white mb-1"><i class="fas fa-laptop-code w-5 mr-1 text-center"></i> Ujian & Tugas</a>
+                <a href="#" onclick="bukaMenu('kuis', 'Kuis Berwaktu', this)" class="sidebar-item block px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-700 hover:text-white mb-1"><i class="fas fa-stopwatch w-5 mr-1 text-center"></i> Kuis Berwaktu</a>
                 <a href="#" onclick="bukaMenu('nilai', 'Daftar Nilai', this)" class="sidebar-item block px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-700 hover:text-white mb-1"><i class="fas fa-award w-5 mr-1 text-center"></i> Daftar Nilai</a>
                 <a href="#" onclick="bukaMenu('pengaturan', 'Pengaturan & Privasi', this)" class="sidebar-item block px-4 py-3 rounded-xl text-slate-300 mt-3 border-t border-slate-700/50 pt-4 hover:bg-slate-700 hover:text-white"><i class="fas fa-gear w-5 mr-1 text-center"></i> Pengaturan</a>`;
             
@@ -805,17 +843,38 @@ onAuthStateChanged(auth, async (user) => {
     async function simpanAbsenMassal() {
         const barisSiswa = document.querySelectorAll('.baris-siswa');
         if(barisSiswa.length === 0) return alert("Belum ada data murid di kelas ini.");
-        const tglID = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
-        const waktuLabel = new Date().toLocaleString('id-ID', { day: '2-digit', month: 'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+        
+        const inputTgl = document.getElementById('tanggal-absen-manual').value;
+        let dateObj = inputTgl ? new Date(inputTgl) : new Date();
+        
+        const tglID = dateObj.toLocaleDateString('id-ID').replace(/\//g, '-');
+        const optionTime = { day: '2-digit', month: 'short', year:'numeric', hour:'2-digit', minute:'2-digit' };
+        
+        const waktuLabel = inputTgl 
+            ? dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year:'numeric' }) + ' (Manual)' 
+            : dateObj.toLocaleString('id-ID', optionTime);
+
         let count = 0;
         for(const baris of barisSiswa) {
             const nama = baris.getAttribute('data-nama');
             const status = baris.querySelector('input[type="radio"]:checked').value;
             const docId = `${currentClass.kode}_${tglID}_${nama.replace(/\s+/g, '_')}`;
-            await setDoc(doc(db, "absensi", docId), { kode_kelas: currentClass.kode, nama: nama, status: status, tanggal: waktuLabel, waktu: Date.now() }, { merge: true }); 
+            await setDoc(doc(db, "absensi", docId), { kode_kelas: currentClass.kode, nama: nama, status: status, tanggal: waktuLabel, waktu: dateObj.getTime() }, { merge: true }); 
             count++;
         }
-        alert(`Sukses! ${count} data presensi hari ini berhasil diperbarui.`);
+        alert(`Sukses! ${count} data presensi untuk tanggal ${tglID} berhasil disimpan.`);
+    }
+
+    // --- FITUR MENGHAPUS MURID ---
+    async function hapusMurid(docId, namaSiswa) {
+        if(confirm(`Yakin ingin mengeluarkan santri "${namaSiswa}" dari kelas ini?\nData absensi dan nilainya akan tetap tersimpan dalam sistem, namun ia tidak akan muncul lagi di daftar absen baru.`)) {
+            try {
+                await deleteDoc(doc(db, "anggota_kelas", docId));
+                alert(`Santri ${namaSiswa} berhasil dihapus dari kelas.`);
+            } catch(e) {
+                alert("Gagal menghapus santri: " + e.message);
+            }
+        }
     }
 
     // --- FITUR BUILDER SOAL PAKET DINAMIS ---
@@ -939,6 +998,71 @@ onAuthStateChanged(auth, async (user) => {
         await addDoc(collection(db, "nilai"), { kode_kelas: currentClass.kode, nama, kategori, materi, skor: Number(skor), waktu: Date.now() });
         document.getElementById('nilai-materi').value = ""; document.getElementById('nilai-skor').value = "";
         alert(`✅ Berhasil menyimpan nilai ${kategori} untuk santri ${nama}!`);
+    }
+
+    // --- FITUR LOGIKA KUIS BERWAKTU ---
+    async function simpanKuis() {
+        const judul = document.getElementById('kuis-judul').value.trim();
+        const waktu = document.getElementById('kuis-waktu').value;
+        const soal = document.getElementById('kuis-soal').value.trim();
+
+        if(!judul || !waktu || !soal) return alert("Lengkapi semua form kuis!");
+
+        await addDoc(collection(db, "kuis"), {
+            kode_kelas: currentClass.kode,
+            judul: judul,
+            durasi_menit: parseInt(waktu),
+            soal: soal,
+            waktu_dibuat: Date.now()
+        });
+
+        document.getElementById('kuis-judul').value = '';
+        document.getElementById('kuis-waktu').value = '';
+        document.getElementById('kuis-soal').value = '';
+        alert("Kuis berwaktu berhasil diterbitkan!");
+    }
+
+    function mulaiKuis(idKuis, durasiMenit) {
+        const btnMulai = document.getElementById(`btn-mulai-${idKuis}`);
+        const areaKerja = document.getElementById(`area-kerja-${idKuis}`);
+        const timerDisplay = document.getElementById(`timer-${idKuis}`);
+
+        btnMulai.classList.add('hidden');
+        areaKerja.classList.remove('hidden');
+
+        let waktuSisa = durasiMenit * 60; // Konversi menit ke detik
+
+        intervalKuis[idKuis] = setInterval(() => {
+            waktuSisa--;
+            let m = Math.floor(waktuSisa / 60);
+            let s = waktuSisa % 60;
+            timerDisplay.innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+
+            // Auto Submit jika waktu habis
+            if(waktuSisa <= 0) {
+                clearInterval(intervalKuis[idKuis]);
+                alert("Waktu habis! Jawaban Anda akan dikirim secara otomatis.");
+                submitKuis(idKuis);
+            }
+        }, 1000);
+    }
+
+    async function submitKuis(idKuis) {
+        if(intervalKuis[idKuis]) clearInterval(intervalKuis[idKuis]); // Hentikan timer
+
+        const jawaban = document.getElementById(`jawaban-kuis-${idKuis}`).value || "Waktu Habis / Tidak Terjawab";
+        const idDocJawaban = `${idKuis}_${currentUser.uid}`;
+
+        await setDoc(doc(db, "jawaban_kuis", idDocJawaban), {
+            id_kuis: idKuis,
+            kode_kelas: currentClass.kode,
+            nama: currentUser.nama,
+            jawaban: jawaban,
+            waktu_submit: Date.now()
+        }, { merge: true });
+
+        alert("Jawaban kuis berhasil dikirim!");
+        document.getElementById(`area-kerja-${idKuis}`).innerHTML = `<div class="text-emerald-600 font-bold p-4 bg-emerald-50 rounded-xl border border-emerald-200"><i class="fas fa-check-circle mr-2"></i> Kuis selesai dikerjakan!</div>`;
     }
 
     // --- FITUR GURU: UNDUH SOAL KE WORD ---
@@ -1448,7 +1572,13 @@ onAuthStateChanged(auth, async (user) => {
                     htmlAbsen += `
                     <div class="flex flex-col md:grid md:grid-cols-12 gap-2 md:gap-2 p-3 hover:bg-blue-50/50 items-start md:items-center baris-siswa transition border-b md:border-none border-gray-50" data-nama="${namaSiswa}">
                         <div class="hidden md:block col-span-1 text-center text-gray-400 font-bold text-xs md:text-sm">${no++}</div>
-                        <div class="col-span-5 font-bold text-slate-800 text-sm flex items-center w-full"><span class="md:hidden w-6 h-6 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center text-xs mr-2">${no-1}</span>${namaSiswa}</div>
+                        <div class="col-span-5 font-bold text-slate-800 text-sm flex items-center justify-between w-full">
+                            <div class="flex items-center truncate">
+                                <span class="md:hidden w-6 h-6 bg-slate-100 text-slate-500 rounded-full flex shrink-0 items-center justify-center text-xs mr-2">${no-1}</span>
+                                <span class="truncate">${namaSiswa}</span>
+                            </div>
+                            <button onclick="hapusMurid('${doc.id}', '${namaSiswa}')" class="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 w-7 h-7 rounded-full flex items-center justify-center transition shrink-0 ml-2" title="Keluarkan Santri"><i class="fas fa-user-minus text-xs"></i></button>
+                        </div>
                         <div class="col-span-6 flex flex-wrap gap-2 md:justify-around text-xs mt-2 md:mt-0 w-full md:w-auto">
                             <label class="cursor-pointer radio-absen radio-hadir flex-1 md:flex-none text-center"><input type="radio" name="abs_${doc.id}" value="Hadir" checked class="hidden"> <span class="block md:inline-block px-2 md:px-3 py-1.5 border border-gray-200 rounded-lg md:rounded-full bg-white text-gray-500 hover:bg-gray-50 w-full">Hadir</span></label>
                             <label class="cursor-pointer radio-absen radio-sakit flex-1 md:flex-none text-center"><input type="radio" name="abs_${doc.id}" value="Sakit" class="hidden"> <span class="block md:inline-block px-2 md:px-3 py-1.5 border border-gray-200 rounded-lg md:rounded-full bg-white text-gray-500 hover:bg-gray-50 w-full">Sakit</span></label>
@@ -1500,7 +1630,61 @@ onAuthStateChanged(auth, async (user) => {
             });
         }
 
-// E. Tarik Nilai & Hitung Peringkat Otomatis (SMART RANKING)
+        // F. Tarik Data Kuis Waktu
+        onSnapshot(query(collection(db, "kuis"), qBase), async (snap) => {
+            let dataKuis = snap.docs.map(doc => ({id: doc.id, ...doc.data()})).sort((a,b) => b.waktu_dibuat - a.waktu_dibuat);
+
+            // Ambil riwayat kuis murid agar tidak bisa kerja 2 kali
+            let riwayatKuisMurid = {};
+            if(currentUser.role === 'murid') {
+                const snapJwb = await getDocs(query(collection(db, "jawaban_kuis"), qBase, where("nama", "==", currentUser.nama)));
+                snapJwb.forEach(d => riwayatKuisMurid[d.data().id_kuis] = true);
+            }
+
+            let html = "";
+            dataKuis.forEach(k => {
+                let isSelesai = currentUser.role === 'murid' && riwayatKuisMurid[k.id];
+
+                html += `
+                <div class="border border-rose-100 bg-rose-50/20 p-5 rounded-2xl shadow-sm mb-4">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <span class="bg-rose-100 text-rose-700 text-xs font-bold px-3 py-1 rounded-full mb-2 inline-block"><i class="fas fa-stopwatch mr-1"></i> ${k.durasi_menit} Menit</span>
+                            <h4 class="font-extrabold text-lg text-slate-800">${k.judul}</h4>
+                        </div>
+                    </div>`;
+
+                if(currentUser.role === 'guru') {
+                    html += `<p class="text-sm text-slate-600 whitespace-pre-wrap bg-white p-3 border border-slate-200 rounded-xl mb-3">${k.soal}</p>
+                             <p class="text-xs text-rose-500 font-bold italic"><i class="fas fa-info-circle mr-1"></i> Kuis telah terbit dan bisa dikerjakan santri.</p>`;
+                } else {
+                    if(isSelesai) {
+                        html += `<div class="text-emerald-600 font-bold p-3 bg-emerald-50 rounded-xl border border-emerald-200"><i class="fas fa-check-circle mr-2"></i> Sudah diserahkan</div>`;
+                    } else {
+                        html += `
+                        <button id="btn-mulai-${k.id}" onclick="mulaiKuis('${k.id}', ${k.durasi_menit})" class="bg-rose-500 hover:bg-rose-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-md transition w-full md:w-auto"><i class="fas fa-play mr-2"></i> Mulai Kerjakan Sekarang</button>
+
+                        <div id="area-kerja-${k.id}" class="hidden mt-4 overflow-hidden rounded-xl border border-rose-200 shadow-sm">
+                            <div class="flex justify-between items-center bg-rose-600 text-white p-3 font-bold">
+                                <span class="text-sm tracking-wide"><i class="fas fa-clock mr-1 animate-pulse"></i> Sisa Waktu:</span>
+                                <span id="timer-${k.id}" class="text-2xl font-mono bg-rose-800/50 px-3 py-1 rounded-lg">${k.durasi_menit.toString().padStart(2, '0')}:00</span>
+                            </div>
+                            <div class="bg-white p-4">
+                                <p class="text-slate-800 font-semibold mb-4 whitespace-pre-wrap">${k.soal}</p>
+                                <textarea id="jawaban-kuis-${k.id}" rows="4" class="w-full border-2 border-slate-200 p-3 rounded-xl outline-none focus:border-rose-400 mb-3 transition" placeholder="Ketik jawaban cepat di sini..."></textarea>
+                                <button onclick="submitKuis('${k.id}')" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition shadow-md"><i class="fas fa-paper-plane mr-2"></i> Serahkan Jawaban</button>
+                            </div>
+                        </div>`;
+                    }
+                }
+                html += `</div>`;
+            });
+
+            document.getElementById('list-kuis-container').innerHTML = html || `<div class="text-center text-gray-400 py-8 text-sm italic border-2 border-dashed border-gray-200 rounded-xl">Belum ada Kuis Berwaktu yang aktif.</div>`;
+            if(currentUser.role === 'guru') document.getElementById('panel-guru-kuis').classList.remove('hidden');
+        });
+
+        // E. Tarik Nilai & Hitung Peringkat Otomatis (SMART RANKING)
         onSnapshot(query(collection(db, "nilai"), qBase), (snap) => {
             let htmlGuru = ""; let htmlMurid = "";
             let rekapanSiswa = {}; // Wadah untuk akumulasi
@@ -1623,4 +1807,4 @@ onAuthStateChanged(auth, async (user) => {
     }
 </script>
 </body>
-                </html>
+</html>
